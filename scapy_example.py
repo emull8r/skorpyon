@@ -1,13 +1,18 @@
-import scapy.all as scapy
+#! /usr/bin/python
+import sys
 
-request = scapy.ARP()
-  
-request.pdst = 'x'
-broadcast = scapy.Ether()
-  
-broadcast.dst = 'ff:ff:ff:ff:ff:ff'
-  
-request_broadcast = broadcast / request
-clients = scapy.srp(request_broadcast, timeout = 1)[0]
-for element in clients:
-    print(element[1].psrc + "      " + element[1].hwsrc)
+variable = "192.168.0.1/24"
+
+from scapy.all import srp, Ether, ARP, conf
+conf.verb = 0
+ans, unans = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=variable),
+                 timeout=2)
+
+print(r"\begin{tabular}{|l|l|}")
+print(r"\hline")
+print(r"MAC & IP\\")
+print(r"\hline")
+for snd,rcv in ans:
+    print(rcv.sprintf(r"%Ether.src% & %ARP.psrc%\\"))
+print(r"\hline")
+print(r"\end{tabular}")
