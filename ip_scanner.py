@@ -1,21 +1,23 @@
 """Scanner: A Module that contains classes for port scans and other network scans."""
 
-import socket
-import sys
-from datetime import datetime
-from scapy.all import srp, conf
+from scapy.all import *
+from scapy.layers.inet import IP, TCP
 from scapy.layers.l2 import Ether, ARP
 
 
 class Scanner:
     """ A class specifically for scanning to get information about other hosts on the network."""
+    scan_timeout = 2
+
+    def __init__(self):
+        self.scan_timeout = 2
 
     @staticmethod
-    def get_hosts(subnet):
+    def get_hosts(subnet, timeout=2):
         """ Get the IP addresses of hosts on the subnet. """
         hosts = []
         conf.verb = 0
-        ans, unans = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=subnet), timeout=2)
+        ans, unans = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=subnet), timeout=timeout)
 
         for snd, rcv in ans:
             host = rcv.sprintf(r"%ARP.psrc%")
@@ -25,20 +27,13 @@ class Scanner:
         return hosts
 
     @staticmethod
-    def scan_host(address, min_port, max_port):
-        # Print a nice banner with information on which host we are about to scan
-        print("_" * 60)
-        print("Please wait, scanning remote host", address)
-        print("_" * 60)
-
-        # Check the date and time the scan was started
-        t1 = datetime.now()
+    def connect_scan(address, min_port, max_port, timeout=0.01):
 
         # We will return a list of ports
         ports = []
 
         # Set socket timeout
-        socket.setdefaulttimeout(0.01)
+        socket.setdefaulttimeout(timeout)
 
         # Using the range function to specify ports
         # Also we will do error handling
@@ -64,13 +59,28 @@ class Scanner:
             print("Couldn't connect to server")
             sys.exit()
 
-        # Checking time again
-        t2 = datetime.now()
+        return ports
 
-        # Calculate the difference in time to now how long the scan took
-        total = t2 - t1
+    @staticmethod
+    def syn_scan(dst_ip, min_port, max_port, timeout=3):
+        # Set up a list of ports
+        ports = []
+        # Scan from a random port
+        src_port = RandShort()
 
-        # Printing the information on the screen
-        print("Scanning Completed in in ", total)
+        try:
+            for dst_port in range(int(min_port), int(max_port)):
+                stealth_scan_resp = sr1(IP(dst=dst_ip) / TCP(sport=src_port, dport=dst_port, flags="S"),
+                                        timeout=timeout)
+                if not str(type(stealth_scan_resp)).__contains__("NoneType"):
+                    if stealth_scan_resp.haslayer(TCP):
+                        if stealth_scan_resp.getlayer(TCP).flags == 0x12:
+                            send_rst = sr(IP(dst=dst_ip) / TCP(sport=src_port, dport=dst_port, flags="R"),
+                                          timeout=timeout)
+                            ports.append(dst_port)
+
+        except KeyboardInterrupt:
+            print("You pressed Ctrl+C")
+            sys.exit()
 
         return ports
