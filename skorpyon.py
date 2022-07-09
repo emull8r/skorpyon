@@ -10,9 +10,9 @@ if __name__ == '__main__':
         print('Example: ./skorpyon.py 192.168.0.1/24 1 65535\n')
 
     elif len(sys.argv) == 4:
-        subnet   = sys.argv[1]
+        subnet = sys.argv[1]
         startPort = int(sys.argv[2])
-        endPort   = int(sys.argv[3])
+        endPort = int(sys.argv[3])
         scanner = Scanner()
         hosts = scanner.get_hosts(subnet)
         for address in hosts:
