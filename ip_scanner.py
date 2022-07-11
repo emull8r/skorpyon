@@ -11,9 +11,6 @@ class Scanner:
     """ A class specifically for scanning to get information about other hosts on the network."""
     scan_timeout = 2
 
-    def __init__(self):
-        self.scan_timeout = 2
-
     @staticmethod
     def get_hosts(subnet, timeout=2):
         """ Get the IP addresses of hosts on the subnet. """
@@ -48,6 +45,25 @@ class Scanner:
                             dport=dst_port, flags="R"),
                                           timeout=timeout)
                             ports.append(dst_port)
+
+        except KeyboardInterrupt:
+            print("You pressed Ctrl+C")
+            sys.exit()
+
+        return ports
+
+    @staticmethod
+    def xmas_scan(dst_ip, min_port, max_port, timeout=3):
+        """Conduct an XMAS scan against a destination IP from ports min_port to max_port."""
+        # Set up a list of ports
+        ports = []
+
+        try:
+            for dst_port in range(int(min_port), int(max_port)):
+                xmas_scan_resp = sr1(IP(dst=dst_ip)/TCP(dport=dst_port,flags="FPU"),timeout=timeout)
+                if str(type(xmas_scan_resp))=="<type 'NoneType'>":
+                    print("Open|Filtered")
+                    ports.append(dst_port)
 
         except KeyboardInterrupt:
             print("You pressed Ctrl+C")
