@@ -4,6 +4,9 @@ import sys
 from datetime import datetime
 from ip_scanner import Scanner
 
+# TODO: Make it so the reward is tied to the lengths of two Sets, one for Open ports, one for Filtered ports
+# Filtered ports give more of a reward than Closed ports (0 reward), but less of a reward than Open ports
+
 if __name__ == '__main__':
 
     if len(sys.argv) < 4:
