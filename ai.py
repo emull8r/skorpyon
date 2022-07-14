@@ -3,7 +3,7 @@
 import numpy as np
 import random
 import os
-import torch
+import torch as torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
@@ -35,3 +35,29 @@ class ReplayMemory(object):
     def __init__(self, capacity):
         self.capacity = capacity
         self.memory = []
+
+    # Add an event to the memory
+    def push(self, event):
+        self.memory.append(event)
+        if len(self.memory > self.capacity):
+            del self.memory[0]
+
+    # Get a sample of our memory  
+    def sample(self, batch_size):
+        samples = zip(*random.sample(self.memory, batch_size))
+        return map(lambda x: Variable(torch.cat(x, 0)), samples)
+    
+class Dqn:
+
+    def __init__(self, input_size, output_size, hidden_layer_size, capacity, gamma, learning_rate=0.001):
+        self.gamma = gamma
+        self.reward_window = []
+        self.model = Network(input_size=input_size, output_size=output_size, hidden_layer_size=hidden_layer_size)
+        self.memory = ReplayMemory(capacity=capacity)
+        self.optimizer = optim.Adam(self.model.parameters(), lr = learning_rate)
+        self.last_state = torch.Tensor(input_size).unsqueeze(0) # Need to add fake dimension corresponding to batch
+        self.last_action = 0 # Initialize action
+        self.last_reward = 0 # Initialize last reward
+
+
+
