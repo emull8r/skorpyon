@@ -70,3 +70,33 @@ class Scanner:
             sys.exit()
 
         return ports
+
+    @staticmethod
+    def fin_scan(dst_ip, min_port, max_port, timeout=3):
+        ports = []
+
+        return ports
+    
+    @staticmethod
+    def null_scan(dst_ip, min_port, max_port, timeout=3):
+        ports = []
+
+        return ports
+
+    @staticmethod
+    def ack_scan(dst_ip, min_port, max_port, timeout=3):
+        ports = []
+
+        return ports
+
+    @staticmethod
+    def window_scan(dst_ip, min_port, max_port, timeout=3):
+        ports = []
+
+        return ports
+
+    @staticmethod
+    def udp_scan(dst_ip, min_port, max_port, timeout=3):
+        ports = []
+
+        return ports
