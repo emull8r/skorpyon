@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """Skorpyon: The main class of the Skorpyon program."""
 import sys
+import ai
 from datetime import datetime
 from ip_scanner import Scanner
 
