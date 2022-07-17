@@ -1,5 +1,4 @@
-"""Classes used to drive the deep learning portion of the scanner."""
-
+"""AI for the deep learning portion of the scanner."""
 
 import random
 import os
@@ -18,10 +17,6 @@ class Network(nn.Module):
         super(Network, self).__init__()
         self.input_size = input_size # Number of input neurons
         self.output_size = output_size # Number of output neurons
-        # Scan types: SYN, XMAS, FIN, NULL, ACK, Window, and UDP = 7 actions
-        # Ports: 0 - 65535 = 65536 ports
-        # 7 + 65536 = 65543 input neurons
-        # Or, what if we had a separate neural network for each type of scan?
         self.hidden_layer = hidden_layer_size
         self.fc1 = nn.Linear(input_size, self.hidden_layer)
         self.fc2 = nn.Linear(self.hidden_layer, output_size)
@@ -57,8 +52,8 @@ class ReplayMemory(object):
 class Brain:
     """The 'Brain' of a Deep Q-Learning network, used to drive scanning decisions."""
 
-    def __init__(self, input_size, output_size, hidden_layer_size,
-        capacity, gamma, reward_window_size = 1000, learning_rate=0.001):
+    def __init__(self, input_size, output_size, hidden_layer_size=30,
+        capacity=1000, gamma=0.9, reward_window_size=1000, learning_rate=0.001):
         self.gamma = gamma
         self.reward_window = []
         self.reward_window_size = reward_window_size
