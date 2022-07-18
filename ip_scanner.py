@@ -9,7 +9,8 @@ from scapy.layers.l2 import Ether, ARP
 
 class Scanner:
     """ A class specifically for scanning to get information about other hosts on the network."""
-    scan_timeout = 2
+
+    last_port = 65535
 
     @staticmethod
     def get_hosts(subnet, timeout=2):
@@ -24,6 +25,9 @@ class Scanner:
             hosts.append(host)
 
         return hosts
+
+    
+
 
     @staticmethod
     def syn_scan(dst_ip, min_port, max_port, timeout=3):
@@ -44,6 +48,7 @@ class Scanner:
                             send_rst = sr(IP(dst=dst_ip) / TCP(sport=src_port,
                             dport=dst_port, flags="R"),
                                           timeout=timeout)
+                            print("Port " + dst_port + " is Open")
                             ports.append(dst_port)
 
         except KeyboardInterrupt:
@@ -62,7 +67,7 @@ class Scanner:
             for dst_port in range(int(min_port), int(max_port)):
                 xmas_scan_resp = sr1(IP(dst=dst_ip)/TCP(dport=dst_port,flags="FPU"),timeout=timeout)
                 if str(type(xmas_scan_resp))=="<type 'NoneType'>":
-                    print("Open|Filtered")
+                    print("Port " + dst_port + " is Open|Filtered")
                     ports.append(dst_port)
 
         except KeyboardInterrupt:
@@ -99,4 +104,13 @@ class Scanner:
     def udp_scan(dst_ip, min_port, max_port, timeout=3):
         ports = []
 
+        return ports
+
+    @staticmethod
+    def scan_host(scan_type, dst_ip, min_port, max_port, timeout=3):
+        ports = []
+        if scan_type == 0:
+            ports = Scanner.syn_scan(dst_ip, min_port, max_port, timeout)
+        else:
+            ports = Scanner.xmas_scan(dst_ip, min_port, max_port, timeout)
         return ports

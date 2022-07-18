@@ -1,3 +1,4 @@
+from ip_scanner import Scanner
 from scanner_ai import Brain
 
 class Controller:
@@ -14,21 +15,33 @@ class Controller:
         Finding a filtered port should give half the reward of finding an open port.
     """
 
-    def __init__(self, input_size, output_size, hidden_layer_size=30,
-    capacity=1000, gamma=0.9, reward_window_size=1000, learning_rate=0.001):
+    def __init__(self):
         # Initialize the brain
-        self.brain = Brain(input_size, output_size, hidden_layer_size,
-                            capacity, gamma, reward_window_size, learning_rate)
+        self.brain = Brain(input_size=4, output_size=4)
         # Load the last model, if it exists
         self.brain.load()
         self.scores = []
+        self.last_scan_type = 0
+        self.last_min_port = 0
+        self.last_max_port = 1000
+        self.last_timeout = 3
+        self.last_reward = 0
 
+    def run_scans(self, target_ip, n_runs=100):
+        for i in range(n_runs):
+            last_signal = [self.last_scan_type, self.last_min_port, self.last_max_port, self.last_timeout]
+            action = self.brain.update(self.last_reward, last_signal)
+            self.scores.append(self.brain.score())
+            #TODO: Figure out if these values need to be normalized
+            self.last_scan_type = action[0]
+            self.last_min_port = action[1]
+            self.last_max_port = action[2]
+            self.last_timeout = action[3]
+            ports = Scanner.scan_host(self.last_scan_type, target_ip,
+            self.last_min_port, self.last_max_port, self.last_timeout)
+            self.last_reward = len(ports)
+        self.brain.save()
 
-    def update(self):
-        # last_signal = [self.car.signal1, self.car.signal2, self.car.signal3, orientation, -orientation]
-        # action = brain.update(last_reward, last_signal)
-        # scores.append(brain.score())
-        pass
 
 # Example:
 

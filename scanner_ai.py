@@ -99,7 +99,7 @@ class Brain:
         td_loss.backward(retain_variables = True)
         self.optimizer.step()
 
-    def update(self, reward, signal, n_samples=100):
+    def update(self, reward, signal, n_samples=50):
         """Update the model. Enter the new state, start learning, and get the new last reward.
             Keyword arguments:
             reward -- The new reward from entering the new state
