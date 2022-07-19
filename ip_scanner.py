@@ -3,8 +3,30 @@ import sys
 from scapy.all import conf, sr1, sr
 from scapy.volatile import RandShort
 from scapy.sendrecv import srp
-from scapy.layers.inet import IP, TCP
+from scapy.layers.inet import IP, TCP, ICMP
 from scapy.layers.l2 import Ether, ARP
+
+class ScanResult:
+    """Contains lists of ports that are either open, filtered, or open or filtered but inconclusive"""
+
+    def __init__(self, open_ports, filtered_ports, open_or_filtered_ports):
+        self.open_ports = open_ports
+        self.filtered_ports = filtered_ports
+        self.open_or_filtered_ports = open_or_filtered_ports
+
+    def get_open_ports(self):
+        """Get a list of ports that are definitely open."""
+        return self.open_ports
+
+    def get_filtered_ports(self):
+        """Get a list of ports that are definitely filtered."""
+        return self.filtered_ports
+
+    def get_open_or_filtered_ports(self):
+        """Get a list of ports that are either open or filtered.
+            NOTE: These ports are distinct from the ones in the other list of ports.
+        """
+        return self.open_or_filtered_ports
 
 
 class Scanner:
@@ -26,91 +48,113 @@ class Scanner:
 
         return hosts
 
-    
-
-
     @staticmethod
     def syn_scan(dst_ip, min_port, max_port, timeout=3):
         """Conduct a SYN scan against a destination IP from ports min_port to max_port."""
-        # Set up a list of ports
-        ports = []
+        # Initialize lists of ports
+        open_ports = []
+        filtered_ports = []
         # Scan from a random port
         src_port = RandShort()
 
-        try:
-            for dst_port in range(int(min_port), int(max_port)):
-                stealth_scan_resp = sr1(IP(dst=dst_ip) / TCP(sport=src_port,
-                dport=dst_port, flags="S"),
-                                        timeout=timeout)
-                if not str(type(stealth_scan_resp)).__contains__("NoneType"):
-                    if stealth_scan_resp.haslayer(TCP):
-                        if stealth_scan_resp.getlayer(TCP).flags == 0x12:
-                            send_rst = sr(IP(dst=dst_ip) / TCP(sport=src_port,
-                            dport=dst_port, flags="R"),
-                                          timeout=timeout)
-                            print("Port " + dst_port + " is Open")
-                            ports.append(dst_port)
+        for dst_port in range(int(min_port), int(max_port)):
+            stealth_scan_resp = sr1(IP(dst=dst_ip)/TCP(sport=src_port,dport=dst_port,flags="S"),timeout=timeout)
+            if(str(type(stealth_scan_resp))=="<type 'NoneType'>"):
+                filtered_ports.append(dst_port)
+            elif(stealth_scan_resp.haslayer(TCP)):
+                if(stealth_scan_resp.getlayer(TCP).flags == 0x12):
+                    sr(IP(dst=dst_ip)/TCP(sport=src_port,dport=dst_port,flags="R"),timeout=timeout)
+                    open_ports.append(dst_port)
+                elif(stealth_scan_resp.haslayer(ICMP)):
+                    if(int(stealth_scan_resp.getlayer(ICMP).type)==3 and
+                    int(stealth_scan_resp.getlayer(ICMP).code) in [1,2,3,9,10,13]):
+                        filtered_ports.append(dst_port)
 
-        except KeyboardInterrupt:
-            print("You pressed Ctrl+C")
-            sys.exit()
-
-        return ports
+        return ScanResult(open_ports, filtered_ports, [])
 
     @staticmethod
     def xmas_scan(dst_ip, min_port, max_port, timeout=3):
         """Conduct an XMAS scan against a destination IP from ports min_port to max_port."""
-        # Set up a list of ports
-        ports = []
+        
+        filtered_ports = []
+        open_or_filtered_ports = []
 
-        try:
-            for dst_port in range(int(min_port), int(max_port)):
-                xmas_scan_resp = sr1(IP(dst=dst_ip)/TCP(dport=dst_port,flags="FPU"),timeout=timeout)
-                if str(type(xmas_scan_resp))=="<type 'NoneType'>":
-                    print("Port " + dst_port + " is Open|Filtered")
-                    ports.append(dst_port)
+        for dst_port in range(int(min_port), int(max_port)):
+            xmas_scan_resp = sr1(IP(dst=dst_ip)/TCP(dport=dst_port,flags="FPU"),timeout=timeout)
+            if (str(type(xmas_scan_resp))=="<type 'NoneType'>"):
+                open_or_filtered_ports.append(dst_port)
+            elif(xmas_scan_resp.haslayer(TCP)):
+                if(xmas_scan_resp.haslayer(ICMP)):
+                    if(int(xmas_scan_resp.getlayer(ICMP).type)==3
+                    and int(xmas_scan_resp.getlayer(ICMP).code) in [1,2,3,9,10,13]):
+                        filtered_ports.append(dst_port)
 
-        except KeyboardInterrupt:
-            print("You pressed Ctrl+C")
-            sys.exit()
-
-        return ports
+        return ScanResult([], filtered_ports, open_or_filtered_ports)
 
     @staticmethod
     def fin_scan(dst_ip, min_port, max_port, timeout=3):
-        ports = []
+        """Conduct a FIN scan against a destination IP from ports min_port to max_port."""
+        filtered_ports = []
+        open_or_filtered_ports = []
 
-        return ports
+        for dst_port in range(int(min_port), int(max_port)):
+            fin_scan_resp = sr1(IP(dst=dst_ip)/TCP(dport=dst_port,flags="F"), timeout=timeout)
+            if (str(type(fin_scan_resp))=="<type 'NoneType'>"):
+                open_or_filtered_ports.append(dst_port)
+            elif(fin_scan_resp.haslayer(TCP)):
+                if(fin_scan_resp.haslayer(ICMP)):
+                    if(int(fin_scan_resp.getlayer(ICMP).type)==3
+                        and int(fin_scan_resp.getlayer(ICMP).code) in [1,2,3,9,10,13]):
+                            filtered_ports.append(dst_port)
+
+        return ScanResult([], filtered_ports, open_or_filtered_ports)
     
     @staticmethod
     def null_scan(dst_ip, min_port, max_port, timeout=3):
-        ports = []
+        
+        open_or_filtered_ports = []
+        filtered_ports = []
 
-        return ports
+        for dst_port in range(int(min_port), int(max_port)):
+            null_scan_resp = sr1(IP(dst=dst_ip)/TCP(dport=dst_port,flags=""),timeout=timeout)
+            if (str(type(null_scan_resp))=="<type 'NoneType'>"):
+                open_or_filtered_ports.append(dst_port)
+            elif(null_scan_resp.haslayer(TCP)):
+                if(null_scan_resp.haslayer(ICMP)):
+                    if(int(null_scan_resp.getlayer(ICMP).type)==3
+                        and int(null_scan_resp.getlayer(ICMP).code) in [1,2,3,9,10,13]):
+                            filtered_ports.append(dst_port)
 
-    @staticmethod
-    def ack_scan(dst_ip, min_port, max_port, timeout=3):
-        ports = []
-
-        return ports
+        return ScanResult([], filtered_ports, open_or_filtered_ports)
 
     @staticmethod
     def window_scan(dst_ip, min_port, max_port, timeout=3):
-        ports = []
+        
+        open_ports = []
 
-        return ports
+        for dst_port in range(int(min_port), int(max_port)):
+            window_scan_resp = sr1(IP(dst=dst_ip)/TCP(dport=dst_port,flags="A"),timeout=timeout)
+            if(window_scan_resp.haslayer(TCP)):
+                if(window_scan_resp.getlayer(TCP).window > 0):
+                    open_ports.append(dst_port)
+
+        return ScanResult(open_ports, [], [])
 
     @staticmethod
     def udp_scan(dst_ip, min_port, max_port, timeout=3):
-        ports = []
+        
+        open_ports = []
+        filtered_ports = []
+        open_or_filtered_ports = []
 
-        return ports
+        # TODO: UDP Scan
+
+        return ScanResult(open_ports, filtered_ports, open_or_filtered_ports)
 
     @staticmethod
     def scan_host(scan_type, dst_ip, min_port, max_port, timeout=3):
         ports = []
-        if scan_type == 0:
-            ports = Scanner.syn_scan(dst_ip, min_port, max_port, timeout)
-        else:
-            ports = Scanner.xmas_scan(dst_ip, min_port, max_port, timeout)
+        
+        # TODO: Change return type to scan result
+
         return ports
