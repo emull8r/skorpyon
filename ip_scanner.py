@@ -78,9 +78,12 @@ class Scanner:
         """Conduct an XMAS scan against a destination IP from ports min_port to max_port."""
         filtered_ports = []
         open_or_filtered_ports = []
+        # Scan from a random port
+        src_port = RandShort()
 
         for dst_port in range(int(min_port), int(max_port)):
-            xmas_scan_resp = sr1(IP(dst=dst_ip)/TCP(dport=dst_port,flags="FPU"),timeout=timeout)
+            xmas_scan_resp = sr1(IP(dst=dst_ip)/
+            TCP(sport=src_port, dport=dst_port,flags="FPU"),timeout=timeout)
             if str(type(xmas_scan_resp))=="<type 'NoneType'>":
                 open_or_filtered_ports.append(dst_port)
             elif xmas_scan_resp.haslayer(TCP):
@@ -96,9 +99,12 @@ class Scanner:
         """Conduct a FIN scan against a destination IP from ports min_port to max_port."""
         filtered_ports = []
         open_or_filtered_ports = []
+        # Scan from a random port
+        src_port = RandShort()
 
         for dst_port in range(int(min_port), int(max_port)):
-            fin_scan_resp = sr1(IP(dst=dst_ip)/TCP(dport=dst_port,flags="F"), timeout=timeout)
+            fin_scan_resp = sr1(IP(dst=dst_ip)/
+            TCP(sport=src_port, dport=dst_port,flags="F"), timeout=timeout)
             if str(type(fin_scan_resp))=="<type 'NoneType'>":
                 open_or_filtered_ports.append(dst_port)
             elif fin_scan_resp.haslayer(TCP):
@@ -114,9 +120,12 @@ class Scanner:
         """Conduct a NULL scan against a destination IP from ports min_port to max_port."""
         open_or_filtered_ports = []
         filtered_ports = []
+        # Scan from a random port
+        src_port = RandShort()
 
         for dst_port in range(int(min_port), int(max_port)):
-            null_scan_resp = sr1(IP(dst=dst_ip)/TCP(dport=dst_port,flags=""),timeout=timeout)
+            null_scan_resp = sr1(IP(dst=dst_ip)/
+            TCP(sport=src_port, dport=dst_port,flags=""),timeout=timeout)
             if str(type(null_scan_resp))=="<type 'NoneType'>":
                 open_or_filtered_ports.append(dst_port)
             elif null_scan_resp.haslayer(TCP):
@@ -131,9 +140,12 @@ class Scanner:
     def window_scan(dst_ip, min_port, max_port, timeout=3):
         """Conduct a Window scan against a destination IP from ports min_port to max_port."""
         open_ports = []
+        # Scan from a random port
+        src_port = RandShort()
 
         for dst_port in range(int(min_port), int(max_port)):
-            window_scan_resp = sr1(IP(dst=dst_ip)/TCP(dport=dst_port,flags="A"),timeout=timeout)
+            window_scan_resp = sr1(IP(dst=dst_ip)/
+            TCP(sport=src_port, dport=dst_port,flags="A"),timeout=timeout)
             if window_scan_resp.haslayer(TCP):
                 if window_scan_resp.getlayer(TCP).window > 0:
                     open_ports.append(dst_port)
@@ -146,9 +158,12 @@ class Scanner:
         open_ports = []
         filtered_ports = []
         open_or_filtered_ports = []
+        # Scan from a random port
+        src_port = RandShort()
 
         for dst_port in range(int(min_port), int(max_port)):
-            udp_scan_resp = sr1(IP(dst=dst_ip)/UDP(dport=dst_port),timeout=timeout)
+            udp_scan_resp = sr1(IP(dst=dst_ip)/
+            UDP(sport=src_port, dport=dst_port),timeout=timeout)
             if str(type(udp_scan_resp))=="<type 'NoneType'>":
                 retrans = []
                 for count in range(0,3):
