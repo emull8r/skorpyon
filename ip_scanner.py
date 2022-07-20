@@ -198,13 +198,13 @@ class Scanner:
         """
         if scan_type == 1:
             return Scanner.xmas_scan(dst_ip, min_port, max_port, timeout)
-        elif scan_type == 2:
+        if scan_type == 2:
             return Scanner.fin_scan(dst_ip, min_port, max_port, timeout)
-        elif scan_type == 3:
+        if scan_type == 3:
             return Scanner.null_scan(dst_ip, min_port, max_port, timeout)
-        elif scan_type == 4:
+        if scan_type == 4:
             return Scanner.window_scan(dst_ip, min_port, max_port, timeout)
-        elif scan_type == 5:
+        if scan_type == 5:
             return Scanner.udp_scan(dst_ip, min_port, max_port, timeout)
-        else:
-            return Scanner.syn_scan(dst_ip, min_port, max_port, timeout)
+
+        return Scanner.syn_scan(dst_ip, min_port, max_port, timeout)
