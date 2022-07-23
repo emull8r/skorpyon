@@ -21,7 +21,7 @@ class Network(nn.Module):
         self.fc1 = nn.Linear(input_size, self.hidden_layer)
         self.fc2 = nn.Linear(self.hidden_layer, output_size)
 
-    def get_q_values(self, state):
+    def forward(self, state):
         """Get the Q-Values (output) from the Deep Q-Learning model.
 
             Keyword arguments:
@@ -41,7 +41,7 @@ class ReplayMemory(object):
     def push(self, event):
         """Append an event to the memory."""
         self.memory.append(event)
-        if len(self.memory > self.capacity):
+        if len(self.memory) > self.capacity:
             del self.memory[0]
 
     def sample(self, batch_size):
@@ -69,16 +69,17 @@ class Brain:
         self.state_key = 'state_dict'
         self.optimizer_key = 'optimizer'
 
-    def select_action(self, state, temperature=90):
+    def select_action(self, state, temperature=90, n_samples=50):
         """Choose the next action to take
 
             Keyword arguments:
             state -- The state of the model
             temperature -- Adjusts how confident the AI is in its chosen probabilities.
                             A higher temperature makes the AI more confident.
+            n_samples -- The number of samples for the multinomial to draw from.
         """
         probabilities = F.softmax(self.model(Variable(state, volatile = True))*temperature)
-        action = probabilities.multinomial()
+        action = probabilities.multinomial(n_samples, replacement=True)
         return action.data[0, 0]
 
     def learn(self, batch_state, batch_next_state, batch_reward, batch_action):
@@ -117,7 +118,7 @@ class Brain:
         # Play an action after entering new state
         action = self.select_action(new_state)
         # Start learning from actions in the last events
-        if len(self.memory.memory > n_samples):
+        if len(self.memory.memory) > n_samples:
             batch_state,batch_next_state,batch_reward,batch_action = self.memory.sample(n_samples)
             self.learn(batch_state, batch_next_state, batch_reward, batch_action)
         self.last_action = action

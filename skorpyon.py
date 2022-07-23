@@ -17,9 +17,12 @@ def do_scan(ip_address):
     # Check the date and time the scan was started
     start_time = datetime.now()
 
-    # TODO: Call Controller
     controller = Controller()
-    controller.run_scans(ip_address)
+
+    try:
+        controller.run_scans(ip_address)
+    except KeyboardInterrupt:
+        print("Abort")
 
     # Checking time again
     end_time = datetime.now()
