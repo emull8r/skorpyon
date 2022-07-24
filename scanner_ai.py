@@ -51,7 +51,7 @@ class ReplayMemory(object):
 
 class Brain:
     """The 'Brain' of a Deep Q-Learning network, used to drive scanning decisions."""
-
+    #TODO: Rethink approach. Use specific ports as features, scan types as classes, and open states as rewards
     def __init__(self, input_size, output_size, hidden_layer_size=30,
         capacity=1000, gamma=0.9, reward_window_size=1000, learning_rate=0.001):
         self.gamma = gamma
@@ -78,7 +78,7 @@ class Brain:
                             A higher temperature makes the AI more confident.
             n_samples -- The number of samples for the multinomial to draw from.
         """
-        probabilities = F.softmax(self.model(Variable(state, volatile = True))*temperature)
+        probabilities = F.softmax(self.model(Variable(state))*temperature, dim=1)
         action = probabilities.multinomial(n_samples, replacement=True)
         return action.data[0, 0]
 
@@ -91,13 +91,13 @@ class Brain:
             batch_reward -- A corresponding batch of rewards
             batch_action -- A corresponding batch of actions
         """
-        outputs = self.model(batch_state).gather(1, batch_action.unsqueeze(1)).squeeze(1)
+        outputs = self.model(batch_state).gather(1, batch_action.type(torch.int64).unsqueeze(1)).squeeze(1)
         next_outputs = self.model(batch_next_state).detach().max(1)[0]
         target = self.gamma * next_outputs + batch_reward
         td_loss = F.smooth_l1_loss(outputs, target)
         self.optimizer.zero_grad()
         # Backpropagate the TD loss
-        td_loss.backward(retain_variables = True)
+        td_loss.backward(retain_graph=True)
         self.optimizer.step()
 
     def update(self, reward, signal, n_samples=50):

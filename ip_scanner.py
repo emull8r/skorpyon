@@ -30,7 +30,12 @@ class ScanResult:
 
 
 class Scanner:
-    """ A class specifically for scanning to get information about other hosts on the network."""
+    """ A class specifically for scanning to get information about other hosts on the network.
+    
+    Special thanks to Interference Researcher at Infosec Institute for providing examples of
+    using Scapy to conduct various types of port scans:
+    https://resources.infosecinstitute.com/topic/port-scanning-using-scapy/
+    """
 
     last_port = 65535
 
@@ -60,7 +65,7 @@ class Scanner:
         for dst_port in range(int(min_port), int(max_port)):
             stealth_scan_resp = sr1(IP(dst=dst_ip)/
             TCP(sport=src_port,dport=dst_port,flags="S"),timeout=timeout)
-            if str(type(stealth_scan_resp))=="<type 'NoneType'>":
+            if str(type(stealth_scan_resp)).__contains__("NoneType"):
                 filtered_ports.append(dst_port)
             elif stealth_scan_resp.haslayer(TCP):
                 if stealth_scan_resp.getlayer(TCP).flags == 0x12:
@@ -84,7 +89,7 @@ class Scanner:
         for dst_port in range(int(min_port), int(max_port)):
             xmas_scan_resp = sr1(IP(dst=dst_ip)/
             TCP(sport=src_port, dport=dst_port,flags="FPU"),timeout=timeout)
-            if str(type(xmas_scan_resp))=="<type 'NoneType'>":
+            if str(type(xmas_scan_resp)).__contains__("NoneType"):
                 open_or_filtered_ports.append(dst_port)
             elif xmas_scan_resp.haslayer(TCP):
                 if xmas_scan_resp.haslayer(ICMP):
@@ -105,7 +110,7 @@ class Scanner:
         for dst_port in range(int(min_port), int(max_port)):
             fin_scan_resp = sr1(IP(dst=dst_ip)/
             TCP(sport=src_port, dport=dst_port,flags="F"), timeout=timeout)
-            if str(type(fin_scan_resp))=="<type 'NoneType'>":
+            if str(type(fin_scan_resp)).__contains__("NoneType"):
                 open_or_filtered_ports.append(dst_port)
             elif fin_scan_resp.haslayer(TCP):
                 if fin_scan_resp.haslayer(ICMP):
@@ -114,7 +119,7 @@ class Scanner:
                         filtered_ports.append(dst_port)
 
         return ScanResult([], filtered_ports, open_or_filtered_ports)
-
+    
     @staticmethod
     def null_scan(dst_ip, min_port, max_port, timeout=3):
         """Conduct a NULL scan against a destination IP from ports min_port to max_port."""
@@ -126,7 +131,7 @@ class Scanner:
         for dst_port in range(int(min_port), int(max_port)):
             null_scan_resp = sr1(IP(dst=dst_ip)/
             TCP(sport=src_port, dport=dst_port,flags=""),timeout=timeout)
-            if str(type(null_scan_resp))=="<type 'NoneType'>":
+            if str(type(null_scan_resp)).__contains__("NoneType"):
                 open_or_filtered_ports.append(dst_port)
             elif null_scan_resp.haslayer(TCP):
                 if null_scan_resp.haslayer(ICMP):
@@ -164,12 +169,12 @@ class Scanner:
         for dst_port in range(int(min_port), int(max_port)):
             udp_scan_resp = sr1(IP(dst=dst_ip)/
             UDP(sport=src_port, dport=dst_port),timeout=timeout)
-            if str(type(udp_scan_resp))=="<type 'NoneType'>":
+            if str(type(udp_scan_resp)).__contains__("NoneType"):
                 retrans = []
                 for count in range(0,3):
                     retrans.append(sr1(IP(dst=dst_ip)/UDP(dport=dst_port),timeout=timeout))
                 for item in retrans:
-                    if str(type(item))!="<type 'NoneType'>":
+                    if not str(type(item)).__contains__("NoneType"):
                         open_or_filtered_ports.append(dst_port)
                     elif udp_scan_resp.haslayer(UDP):
                         open_ports.append(dst_port)
@@ -196,15 +201,23 @@ class Scanner:
         max_port -- The last port in the scan range
         timeout -- The time to wait for a response to a sent packet
         """
+        #TODO: Make scanning multithreaded / parallel in some way
+        print("Scan type: ",scan_type)
         if scan_type == 1:
+            print("XMAS scan!")
             return Scanner.xmas_scan(dst_ip, min_port, max_port, timeout)
         if scan_type == 2:
+            print("FIN scan!")
             return Scanner.fin_scan(dst_ip, min_port, max_port, timeout)
         if scan_type == 3:
+            print("NULL scan!")
             return Scanner.null_scan(dst_ip, min_port, max_port, timeout)
         if scan_type == 4:
+            print("WINDOW scan!")
             return Scanner.window_scan(dst_ip, min_port, max_port, timeout)
         if scan_type == 5:
+            print("UDP scan!")
             return Scanner.udp_scan(dst_ip, min_port, max_port, timeout)
 
+        print("SYN scan!")
         return Scanner.syn_scan(dst_ip, min_port, max_port, timeout)
