@@ -117,6 +117,7 @@ class Brain:
                             torch.Tensor([self.last_reward])))
         # Play an action after entering new state
         action = self.select_action(new_state)
+        print("New state: "+str(new_state))
         # Start learning from actions in the last events
         if len(self.memory.memory) > n_samples:
             batch_state,batch_next_state,batch_reward,batch_action = self.memory.sample(n_samples)
@@ -149,7 +150,7 @@ class Brain:
             print('-> Loading checkpoint ...')
             checkpoint = torch.load(self.file_name)
             self.model.load_state_dict(checkpoint[self.state_key])
-            self.model.load_state_dict(checkpoint[self.optimizer_key])
+            #self.model.load_state_dict(checkpoint[self.optimizer_key])
             print('Loaded checkpoint')
         else:
             print('Checkpoint ' + self.file_name + ' not found.')

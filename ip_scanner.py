@@ -9,6 +9,9 @@ class ScanResult:
     """Contains lists of ports that are either open, filtered,
     or open or filtered but inconclusive"""
 
+
+    #TODO: Retool each scan function to scan a single port.
+
     def __init__(self, open_ports, filtered_ports, open_or_filtered_ports):
         self.open_ports = open_ports
         self.filtered_ports = filtered_ports
