@@ -18,4 +18,6 @@ The developer is not reponsible for how end users use this program. Please use t
 
 Special thanks to Interference Researcher at Infosec Institute for providing examples of using Scapy to conduct various types of port scans: https://resources.infosecinstitute.com/topic/port-scanning-using-scapy/
 
+Special thanks to Hadelin de Ponteves and Kirill Eremenko for providing a Deep Q-Learning AI template in their Udemy course: https://www.udemy.com/course/artificial-intelligence-az/
+
 
