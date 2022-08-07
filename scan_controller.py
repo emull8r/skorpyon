@@ -39,42 +39,49 @@ class Controller:
         self.last_min_port = start_port
         self.last_max_port = end_port
         for i in range(n_runs):
+            print("Run #", i)
             for port in range(self.last_min_port, self.last_max_port):
-                last_signal = [self.last_scan_type]
+                last_signal = [port]
                 action = self.brain.update(self.last_reward, last_signal)
                 self.scores.append(self.brain.score())
                 self.last_scan_type = action.item()
                 result = Scanner.scan_host(self.last_scan_type, target_ip,
-                port, port, self.last_timeout)
+                port, self.last_timeout)
                 # Add the open ports
                 for port in result.open_ports:
                     self.all_open_ports.add(port)
+                # Add the filtered ports. Don't add any that are open.
                 for port in result.filtered_ports:
-                    self.all_filtered_ports.add(port)
+                    if port not in self.all_open_ports:
+                        self.all_filtered_ports.add(port)
+                # Add the ports inconclusively open or filtered.
+                # Don't add the ones known to be open or filtered.
                 for port in result.open_or_filtered_ports:
-                    self.all_open_or_filtered_ports.add(port)
+                    if (port not in self.all_open_ports
+                       and port not in self.all_filtered_ports):
+                        self.all_open_or_filtered_ports.add(port)
                 # Calculate scores to improve the machine learning
                 open_reward = OPEN_PORT_SCORE * len(result.open_ports)
                 filtered_reward = FILTERED_PORT_SCORE * len(result.filtered_ports)
-                open_or_filtered_reward = OPEN_OR_FILTERED_SCORE * len(result.open_or_filtered_ports)
+                open_or_filtered_length = len(result.open_or_filtered_ports)
+                open_or_filtered_reward = OPEN_OR_FILTERED_SCORE * open_or_filtered_length
                 calculated_reward =  open_reward + filtered_reward + open_or_filtered_reward
-                self.last_reward = calculated_reward
-                # if calculated_reward == 0:
-                #     self.last_reward = -1
-                # else:
-                #     self.last_reward = calculated_reward
+                if calculated_reward == 0:
+                    self.last_reward = -1
+                else:
+                    self.last_reward = calculated_reward
         # Save the model
         self.brain.save()
         # Print the results
         if len(self.all_open_ports) > 0:
-            print("OPEN PORTS: ", self.all_open_ports)
+            print('OPEN PORTS: ', self.all_open_ports)
         else:
-            print("No conclusively open ports found.")
+            print('No conclusively open ports found.')
         if len(self.all_filtered_ports) > 0:
-            print("FILTERED PORTS: ", self.all_filtered_ports)
+            print('FILTERED PORTS: ', self.all_filtered_ports)
         else:
-            print("No conclusively filtered ports found.")
+            print('No conclusively filtered ports found.')
         if len(self.all_open_or_filtered_ports) > 0:
-            print("INCONCLUSIVELY OPEN OR FILTERED PORTS: ", self.all_open_or_filtered_ports)
+            print('INCONCLUSIVELY OPEN OR FILTERED PORTS: ', self.all_open_or_filtered_ports)
         else:
-            print("No inconclusively open or filtered ports found.")
+            print('No inconclusively open or filtered ports found.')

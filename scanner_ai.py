@@ -2,8 +2,6 @@
 
 import random
 import os
-from pickletools import optimize
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -51,7 +49,6 @@ class ReplayMemory(object):
 
 class Brain:
     """The 'Brain' of a Deep Q-Learning network, used to drive scanning decisions."""
-    #TODO: Rethink approach. Use specific ports as features, scan types as classes, and open states as rewards
     def __init__(self, input_size, output_size, hidden_layer_size=30,
         capacity=1000, gamma=0.9, reward_window_size=1000, learning_rate=0.005):
         self.gamma = gamma
@@ -78,7 +75,7 @@ class Brain:
                             A higher temperature makes the AI more confident.
             n_samples -- The number of samples for the multinomial to draw from.
         """
-        # TODO: Change the action. Maybe make it an array of ints, with 1 for the chosen scan, 0 for the rest
+        #TODO: AI just always chooses 0 (SYN scan). Fix this.
         probabilities = F.softmax(self.model(Variable(state))*temperature, dim=1)
         action = probabilities.multinomial(n_samples, replacement=True)
         return action.data[0, 0]
@@ -92,7 +89,7 @@ class Brain:
             batch_reward -- A corresponding batch of rewards
             batch_action -- A corresponding batch of actions
         """
-        outputs = self.model(batch_state).gather(1, batch_action.type(torch.int64).unsqueeze(1)).squeeze(1)
+        outputs = self.model(batch_state).gather(0, batch_action.unsqueeze(1)).squeeze(1)
         next_outputs = self.model(batch_next_state).detach().max(1)[0]
         target = self.gamma * next_outputs + batch_reward
         td_loss = F.smooth_l1_loss(outputs, target)
@@ -101,7 +98,8 @@ class Brain:
         td_loss.backward(retain_graph=True)
         self.optimizer.step()
 
-    def update(self, reward, signal, n_samples=50):
+    #TODO: Make n_samples a command line parameter, or better yet, pull past events based on port
+    def update(self, reward, signal, n_samples=10):
         """Update the model. Enter the new state, start learning, and get the new last reward.
             Keyword arguments:
             reward -- The new reward from entering the new state
@@ -115,14 +113,18 @@ class Brain:
         self.memory.push((self.last_state,
                             new_state,
                             torch.LongTensor([last_action]),
-                            torch.Tensor([self.last_reward])))
-        # Play an action after entering new state
-        action = self.select_action(new_state)
-        print("New state: "+str(new_state))
-        # Start learning from actions in the last events
+                            torch.LongTensor([self.last_reward])))
         if len(self.memory.memory) > n_samples:
-            batch_state,batch_next_state,batch_reward,batch_action = self.memory.sample(n_samples)
+            # Play an action after entering new state
+            print('AI-chosen scan')
+            action = self.select_action(new_state)
+            # Start learning from actions in the last events
+            batch_state,batch_next_state,batch_action,batch_reward = self.memory.sample(n_samples)
             self.learn(batch_state, batch_next_state, batch_reward, batch_action)
+        else:
+            # Choose a random scan type
+            print('Randomized scan')
+            action = torch.LongTensor([random.randint(0, 5)])
         self.last_action = action
         self.last_state = new_state
         self.last_reward = reward

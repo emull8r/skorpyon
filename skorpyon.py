@@ -68,5 +68,3 @@ if __name__ == '__main__':
         print('Scan IP address while training the model for N runs: '+
         './skorpyon.py <IP address> <start port> <end port> <N training runs>')
         print('Example: ./skorpyon.py 192.168.0.3 1 1000 50\n')
-        
-        
