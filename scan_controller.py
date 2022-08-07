@@ -57,7 +57,12 @@ class Controller:
                 open_reward = OPEN_PORT_SCORE * len(result.open_ports)
                 filtered_reward = FILTERED_PORT_SCORE * len(result.filtered_ports)
                 open_or_filtered_reward = OPEN_OR_FILTERED_SCORE * len(result.open_or_filtered_ports)
-                self.last_reward =  open_reward + filtered_reward + open_or_filtered_reward
+                calculated_reward =  open_reward + filtered_reward + open_or_filtered_reward
+                self.last_reward = calculated_reward
+                # if calculated_reward == 0:
+                #     self.last_reward = -1
+                # else:
+                #     self.last_reward = calculated_reward
         # Save the model
         self.brain.save()
         # Print the results

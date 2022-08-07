@@ -53,7 +53,7 @@ class Brain:
     """The 'Brain' of a Deep Q-Learning network, used to drive scanning decisions."""
     #TODO: Rethink approach. Use specific ports as features, scan types as classes, and open states as rewards
     def __init__(self, input_size, output_size, hidden_layer_size=30,
-        capacity=1000, gamma=0.9, reward_window_size=1000, learning_rate=0.001):
+        capacity=1000, gamma=0.9, reward_window_size=1000, learning_rate=0.005):
         self.gamma = gamma
         self.reward_window = []
         self.reward_window_size = reward_window_size
@@ -78,6 +78,7 @@ class Brain:
                             A higher temperature makes the AI more confident.
             n_samples -- The number of samples for the multinomial to draw from.
         """
+        # TODO: Change the action. Maybe make it an array of ints, with 1 for the chosen scan, 0 for the rest
         probabilities = F.softmax(self.model(Variable(state))*temperature, dim=1)
         action = probabilities.multinomial(n_samples, replacement=True)
         return action.data[0, 0]
@@ -141,7 +142,7 @@ class Brain:
     def save(self):
         """Save the model to the machine."""
         torch.save({self.state_key: self.model.state_dict(),
-        self.optimizer_key: self.optimizer.state_dict,
+        self.optimizer_key: self.optimizer.state_dict(),
         }, self.file_name)
 
     def load(self):
@@ -150,7 +151,7 @@ class Brain:
             print('-> Loading checkpoint ...')
             checkpoint = torch.load(self.file_name)
             self.model.load_state_dict(checkpoint[self.state_key])
-            #self.model.load_state_dict(checkpoint[self.optimizer_key])
+            self.optimizer.load_state_dict(checkpoint[self.optimizer_key])
             print('Loaded checkpoint')
         else:
             print('Checkpoint ' + self.file_name + ' not found.')
