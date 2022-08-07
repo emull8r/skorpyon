@@ -2,13 +2,15 @@
 A Python port scanner that uses Deep Q-Learning to calibrate the type of scan (SYN, XMAS, FIN, NULL, Window, UDP) against a target.
 
 # Usage
-./skorpyon (subnet): Prints the hosts available on the local network.
-
-Example: ./skorpyon 192.168.0.1/24
-
-./skorpyon (local IP address): Conducts a port scan against a machine  on the local network with the specified IP address.
-
-Example: ./skorpyon 192.168.0.3
+# Usage:
+Get other hosts on subnet: ./skorpyon.py [subnet address]
+Example: ./skorpyon.py 192.168.0.1/24\n
+Scan IP address without training the model:
+./skorpyon.py [IP address] [start port] [end port]
+Example: ./skorpyon.py 192.168.0.3 1 1000
+Scan IP address while training the model for N runs:
+./skorpyon.py [IP address] [start port] [end port] [N training runs]
+Example: ./skorpyon.py 192.168.0.3 1 1000 50
 
 # Disclaimer
 The developer is not reponsible for how end users use this program. Please use this program for education and/or legitimate white-hat penetration testing.
