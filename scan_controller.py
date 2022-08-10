@@ -21,7 +21,7 @@ class Controller:
 
     def __init__(self):
         # Initialize the brain
-        self.brain = Brain(input_size=1, output_size=1)
+        self.brain = Brain(input_size=1, output_size=6)
         # Load the last model, if it exists
         self.brain.load()
         self.scores = []
@@ -34,6 +34,15 @@ class Controller:
         self.all_filtered_ports = set()
         self.all_open_or_filtered_ports = set()
 
+    def action_to_scan_type(self, action):
+        """Convert an action, an array of length 6, to a scan type."""
+        if len(action) == 6:
+            for i in range(0, 5):
+                if action[i] > 0:
+                    return i
+        else:
+            return 0
+
     def run_scans(self, target_ip, start_port, end_port, n_runs):
         """Scan a target IP from ports [start port] to [end port] N times."""
         self.last_min_port = start_port
@@ -44,7 +53,7 @@ class Controller:
                 last_signal = [port]
                 action = self.brain.update(self.last_reward, last_signal)
                 self.scores.append(self.brain.score())
-                self.last_scan_type = action.item()
+                self.last_scan_type = self.action_to_scan_type(action)
                 result = Scanner.scan_host(self.last_scan_type, target_ip,
                 port, self.last_timeout)
                 # Add the open ports

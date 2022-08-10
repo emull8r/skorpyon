@@ -60,7 +60,7 @@ class Brain:
         self.optimizer = optim.Adam(self.model.parameters(), lr = learning_rate)
         # Need to add fake dimension corresponding to batch
         self.last_state = torch.Tensor(input_size).unsqueeze(0)
-        self.last_action = 0 # Initialize action
+        self.last_action = [1, 0, 0, 0, 0, 0] # Initialize action
         self.last_reward = 0 # Initialize last reward
         self.file_name = 'brain.pth'
         self.state_key = 'state_dict'
@@ -76,9 +76,13 @@ class Brain:
             n_samples -- The number of samples for the multinomial to draw from.
         """
         #TODO: AI just always chooses 0 (SYN scan). Fix this.
+        print("Softmax: ",self.model(Variable(state))*temperature)
         probabilities = F.softmax(self.model(Variable(state))*temperature, dim=1)
-        action = probabilities.multinomial(n_samples, replacement=True)
-        return action.data[0, 0]
+        print("Probabilities: ",probabilities)
+        #action = probabilities.multinomial(n_samples, replacement=True)
+        action = probabilities.data[0]
+        #return action.data[0, 0]
+        return action
 
     def learn(self, batch_state, batch_next_state, batch_reward, batch_action):
         """Make the AI learn from a whole batch of past actions, states, and rewards.
@@ -89,7 +93,8 @@ class Brain:
             batch_reward -- A corresponding batch of rewards
             batch_action -- A corresponding batch of actions
         """
-        outputs = self.model(batch_state).gather(0, batch_action.unsqueeze(1)).squeeze(1)
+        # TODO: Figure out how to use this
+        outputs = self.model(batch_state).gather(1, batch_action.unsqueeze(1)).squeeze(1)
         next_outputs = self.model(batch_next_state).detach().max(1)[0]
         target = self.gamma * next_outputs + batch_reward
         td_loss = F.smooth_l1_loss(outputs, target)
@@ -98,8 +103,30 @@ class Brain:
         td_loss.backward(retain_graph=True)
         self.optimizer.step()
 
+    def int_to_action(self, integer):
+        """Convert an integer from 0-5 to an array of 1s and 0s corresponding to the action."""
+        syn = 0
+        xmas = 0
+        fin = 0
+        null = 0
+        window = 0
+        udp = 0
+        if integer == 0:
+            syn = 1
+        elif integer == 1:
+            xmas = 1
+        elif integer == 2:
+            fin = 1
+        elif integer == 3:
+            null = 1
+        elif integer == 4:
+            window = 1
+        elif integer == 5:
+            udp = 1
+        return [syn, xmas, fin, null, window, udp]
+
     #TODO: Make n_samples a command line parameter, or better yet, pull past events based on port
-    def update(self, reward, signal, n_samples=10):
+    def update(self, reward, signal, n_samples=50):
         """Update the model. Enter the new state, start learning, and get the new last reward.
             Keyword arguments:
             reward -- The new reward from entering the new state
@@ -109,10 +136,10 @@ class Brain:
         # The signal should be a list. It must be converted to a torch tensor.
         new_state = torch.Tensor(signal).float().unsqueeze(0)
         # Make sure last action is an int
-        last_action =  int(self.last_action)
+        last_action =  self.last_action
         self.memory.push((self.last_state,
                             new_state,
-                            torch.LongTensor([last_action]),
+                            torch.LongTensor(last_action),
                             torch.LongTensor([self.last_reward])))
         if len(self.memory.memory) > n_samples:
             # Play an action after entering new state
@@ -124,7 +151,7 @@ class Brain:
         else:
             # Choose a random scan type
             print('Randomized scan')
-            action = torch.LongTensor([random.randint(0, 5)])
+            action = torch.LongTensor(self.int_to_action(random.randint(0, 5)))
         self.last_action = action
         self.last_state = new_state
         self.last_reward = reward
