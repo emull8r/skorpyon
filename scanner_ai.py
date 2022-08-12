@@ -66,7 +66,7 @@ class Brain:
         self.state_key = 'state_dict'
         self.optimizer_key = 'optimizer'
 
-    def select_action(self, state, temperature=90, n_samples=50):
+    def select_action(self, state, temperature=9, n_samples=50):
         """Choose the next action to take
 
             Keyword arguments:
@@ -76,13 +76,10 @@ class Brain:
             n_samples -- The number of samples for the multinomial to draw from.
         """
         #TODO: AI just always chooses 0 (SYN scan). Fix this.
-        print("Softmax: ",self.model(Variable(state))*temperature)
-        probabilities = F.softmax(self.model(Variable(state))*temperature, dim=1)
+        probabilities = F.softmax(self.model(Variable(state, volatile=True))*temperature)
         print("Probabilities: ",probabilities)
-        #action = probabilities.multinomial(n_samples, replacement=True)
-        action = probabilities.data[0]
-        #return action.data[0, 0]
-        return action
+        action = probabilities.multinomial(n_samples, replacement=True)
+        return action.data[0, 0]
 
     def learn(self, batch_state, batch_next_state, batch_reward, batch_action):
         """Make the AI learn from a whole batch of past actions, states, and rewards.

@@ -21,7 +21,7 @@ class Controller:
 
     def __init__(self):
         # Initialize the brain
-        self.brain = Brain(input_size=1, output_size=6)
+        self.brain = Brain(input_size=65536, output_size=6)
         # Load the last model, if it exists
         self.brain.load()
         self.scores = []
@@ -43,6 +43,16 @@ class Controller:
         else:
             return 0
 
+    def int_to_state(self, min_value, max_value, actual_value):
+        """Convert an int to an array of zeroes of size N+1, where N
+        is max_value, and set the index [actual_value] to 1"""
+        if min_value <= actual_value and actual_value <= max_value:
+            array = [0] * (max_value+1)
+            array[actual_value] = 1
+            return array
+        else:
+            return []
+
     def run_scans(self, target_ip, start_port, end_port, n_runs):
         """Scan a target IP from ports [start port] to [end port] N times."""
         self.last_min_port = start_port
@@ -50,7 +60,7 @@ class Controller:
         for i in range(n_runs):
             print("Run #", i)
             for port in range(self.last_min_port, self.last_max_port):
-                last_signal = [port]
+                last_signal = self.int_to_state(0, 65535, port)
                 action = self.brain.update(self.last_reward, last_signal)
                 self.scores.append(self.brain.score())
                 self.last_scan_type = self.action_to_scan_type(action)
