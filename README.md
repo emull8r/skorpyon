@@ -6,13 +6,13 @@ Get other hosts on subnet: ./skorpyon.py [subnet address]
 
 Example: ./skorpyon.py 192.168.0.1/24\n
 
-Scan IP address without training the model: ./skorpyon.py [IP address] [start port] [end port]
+Scan IP address from start port to end port: ./skorpyon.py [IP address] [start port] [end port]
 
 Example: ./skorpyon.py 192.168.0.3 1 1000
 
-Scan IP address while training the model for N runs: ./skorpyon.py [IP address] [start port] [end port] [ # runs]
+Scan IP address from start port to end port, using all scan types for each port: ./skorpyon.py [IP address] [start port] [end port] -allscans
 
-Example: ./skorpyon.py 192.168.0.3 1 1000 50
+Example: ./skorpyon.py 192.168.0.3 1 1000 -train
 
 # Disclaimer
 The developer is not reponsible for what end users do with this program.

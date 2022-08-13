@@ -66,7 +66,7 @@ class Brain:
         self.state_key = 'state_dict'
         self.optimizer_key = 'optimizer'
 
-    def select_action(self, state, temperature=90, n_samples=50):
+    def select_action(self, state, temperature=9, n_samples=50):
         """Choose the next action to take
 
             Keyword arguments:
@@ -75,8 +75,8 @@ class Brain:
                             A higher temperature makes the AI more confident.
             n_samples -- The number of samples for the multinomial to draw from.
         """
-        #TODO: AI just always chooses 0 (SYN scan). Fix this.
-        probabilities = F.softmax(self.model(Variable(state))*temperature, dim=1)
+        probabilities = F.softmax(self.model(Variable(state, volatile=True))*temperature)
+        # print("Probabilities: ",probabilities)
         action = probabilities.multinomial(n_samples, replacement=True)
         return action.data[0, 0]
 
@@ -89,42 +89,52 @@ class Brain:
             batch_reward -- A corresponding batch of rewards
             batch_action -- A corresponding batch of actions
         """
-        outputs = self.model(batch_state).gather(0, batch_action.unsqueeze(1)).squeeze(1)
         next_outputs = self.model(batch_next_state).detach().max(1)[0]
         target = self.gamma * next_outputs + batch_reward
-        td_loss = F.smooth_l1_loss(outputs, target)
+        # print("Target: ", target)
+        # print("Batch action: ",batch_action)
+        unsqueezed_actions = batch_action.unsqueeze(0)
+        # print("Unsqueezed: ",unsqueezed)
+        outputs = self.model(batch_state)
+        gathered = outputs.gather(1, unsqueezed_actions)
+        squeezed_actions = gathered.squeeze(1)
+        # print("Squeezed: ",squeezed)
+        #TODO: Fix this: Using target size [50] different from input size [1, 50]
+        td_loss = F.smooth_l1_loss(squeezed_actions, target)
         self.optimizer.zero_grad()
         # Backpropagate the TD loss
         td_loss.backward(retain_graph=True)
         self.optimizer.step()
 
-    #TODO: Make n_samples a command line parameter, or better yet, pull past events based on port
-    def update(self, reward, signal, n_samples=10):
+    def update(self, reward, signal, specific_action=-1, n_samples=50):
         """Update the model. Enter the new state, start learning, and get the new last reward.
             Keyword arguments:
             reward -- The new reward from entering the new state
             signal -- The inputs that triggers entering the new state
+            specific_action -- The specific action / scan type to take. Useful for training.
             n_samples -- The number of samples of past events in memory to use for learning
         """
         # The signal should be a list. It must be converted to a torch tensor.
         new_state = torch.Tensor(signal).float().unsqueeze(0)
         # Make sure last action is an int
-        last_action =  int(self.last_action)
+        last_action =  self.last_action
+        # Push the last event to memory, so we could learn from it
         self.memory.push((self.last_state,
                             new_state,
                             torch.LongTensor([last_action]),
                             torch.LongTensor([self.last_reward])))
+        # Initialize the action variable
+        action = last_action
+        # If the length of memory is greater than the number of samples, start learning
         if len(self.memory.memory) > n_samples:
-            # Play an action after entering new state
-            print('AI-chosen scan')
+            # Select an action
             action = self.select_action(new_state)
             # Start learning from actions in the last events
             batch_state,batch_next_state,batch_action,batch_reward = self.memory.sample(n_samples)
             self.learn(batch_state, batch_next_state, batch_reward, batch_action)
-        else:
-            # Choose a random scan type
-            print('Randomized scan')
-            action = torch.LongTensor([random.randint(0, 5)])
+        # If we have a specific action, use it
+        if specific_action > 0:
+            action = specific_action
         self.last_action = action
         self.last_state = new_state
         self.last_reward = reward
