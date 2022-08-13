@@ -5,7 +5,7 @@ from datetime import datetime
 from ip_scanner import Scanner
 from scan_controller import Controller
 
-def do_scan(target_ip, start_port, end_port, n_runs):
+def do_scan(target_ip, start_port, end_port, allscans):
     """Launch an AI-powered scan and print pretty output."""
 
     # Print a nice banner with information on which host we are about to scan
@@ -19,7 +19,7 @@ def do_scan(target_ip, start_port, end_port, n_runs):
     controller = Controller()
 
     try:
-        controller.run_scans(target_ip, start_port, end_port, n_runs)
+        controller.run_scans(target_ip, start_port, end_port, allscans)
     except KeyboardInterrupt:
         print("Abort")
 
@@ -34,17 +34,6 @@ def do_scan(target_ip, start_port, end_port, n_runs):
 
 
 if __name__ == '__main__':
-    # Usage:
-    # Get other hosts on subnet: ./skorpyon.py <subnet address>
-    # Example: ./skorpyon.py 192.168.0.1/24\n
-    # Scan IP address without training the model:
-    # ./skorpyon.py <IP address> <start port> <end port>
-    # Example: ./skorpyon.py 192.168.0.3 1 1000
-    # Scan IP address while training the model for N runs:
-    # ./skorpyon.py <IP address> <start port> <end port> <N training runs>
-    # Example: ./skorpyon.py 192.168.0.3 1 1000 50
-
-
     if len(sys.argv) == 2:
         argument = sys.argv[1]
         # If it is a subnet, it should be of the form '#.#.#.#/#'
@@ -56,15 +45,15 @@ if __name__ == '__main__':
         else:
             print('Invalid argument. Example subnet: 192.168.0.1/24')
     elif len(sys.argv) == 4:
-        do_scan(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), 1)
-    elif len(sys.argv) == 5:
-        do_scan(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]))
+        do_scan(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), False)
+    elif len(sys.argv) == 5 and sys.argv[4] == '-allscans':
+        do_scan(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), True)
     else:
         print('Get other hosts on subnet: ./skorpyon.py <subnet address>')
         print('Example: ./skorpyon.py 192.168.0.1/24\n')
-        print('Scan IP address without training the model: '+
+        print('Scan IP address from start port to end port: '+
         './skorpyon.py <IP address> <start port> <end port>')
         print('Example: ./skorpyon.py 192.168.0.3 1 1000\n')
-        print('Scan IP address while training the model for N runs: '+
-        './skorpyon.py <IP address> <start port> <end port> <N training runs>')
-        print('Example: ./skorpyon.py 192.168.0.3 1 1000 50\n')
+        print('Scan IP address from start port to end port, using all scan types for each port: '+
+        './skorpyon.py <IP address> <start port> <end port> -allscans')
+        print('Example: ./skorpyon.py 192.168.0.3 1 1000 -allscans\n')
