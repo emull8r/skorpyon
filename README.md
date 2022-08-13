@@ -17,7 +17,7 @@ Example: ./skorpyon.py 192.168.0.3 1 1000 -train
 # Disclaimer
 The developer is not reponsible for what end users do with this program.
 
-Port scanning is a lot like checking if the doors and windows of a house are locked or not. It's fine if you do it to your own house, or if you have permission; otherwise, it could land you in serious trouble.  Please only scan networks that you own or you have permission to scan, either for education or legitimate white-hat penetration testing.
+Users should only scan networks that they own or have permission to scan for education or legitimate white-hat penetration testing.
 
 # Credits
 
