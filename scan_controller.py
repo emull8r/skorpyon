@@ -1,4 +1,5 @@
 """Scan Controller: Contains the controller of the AI scanner."""
+from multiprocessing import Process
 from ip_scanner import Scanner
 from scanner_ai import Brain
 
@@ -7,6 +8,7 @@ FILTERED_PORT_SCORE = 0.5 # Score for the reward of finding filtered ports
 OPEN_OR_FILTERED_SCORE = 0 # Score for inconclusively filtered or open ports
 MAX_PORT = 65535 # The maximum port
 N_SCAN_TYPES = 6 # The number of scan types
+MAX_PROCESSES = 8
 
 class Controller:
     """Controls the AI / smart scanning.
@@ -79,6 +81,16 @@ class Controller:
         else:
             self.last_reward = calculated_reward
 
+    def run_scan(self, target_ip, port, try_all_scan_types):
+        """Run a scan."""
+        # If we are training, try all scan types against all ports
+        if try_all_scan_types:
+            for i in range(0,N_SCAN_TYPES):
+                self.scan_host(target_ip, port, i)
+        # Otherwise, just scan each port
+        else:
+            self.scan_host(target_ip, port)
+
     def run_scans(self, target_ip, start_port, end_port, try_all_scan_types=True):
         """Scan a target IP from ports [start port] to [end port].
             target_ip -- The IP of the machine to scan
@@ -91,14 +103,15 @@ class Controller:
         """
         self.last_min_port = start_port
         self.last_max_port = end_port
+        processes = []
+        #TODO: Make all_open_ports, etc. shareable between the processes
+        #TODO: Make processes part of a pool with a fixed number of total processes
         for port in range(self.last_min_port, self.last_max_port):
-            # If we are training, try all scan types against all ports
-            if try_all_scan_types:
-                for i in range(0,N_SCAN_TYPES):
-                    self.scan_host(target_ip, port, i)
-            # Otherwise, just scan each port
-            else:
-                self.scan_host(target_ip, port)
+            process = Process(target=self.run_scan, args=(target_ip, port, try_all_scan_types))
+            processes.append(process)
+            process.start()
+        for process in processes:
+            process.join()
         # Save the model
         self.brain.save()
         # Print the results
