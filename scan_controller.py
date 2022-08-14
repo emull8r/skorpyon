@@ -1,10 +1,10 @@
 """Scan Controller: Contains the controller of the AI scanner."""
-from ip_scanner import Scanner
+from ip_scanner import ScanResult, Scanner
 from scanner_ai import Brain
 
 OPEN_PORT_SCORE = 1 # Score for the reward of finding open ports
 FILTERED_PORT_SCORE = 0.5 # Score for the reward of finding filtered ports
-OPEN_OR_FILTERED_SCORE = 0 # Score for inconclusively filtered or open ports
+OPEN_OR_FILTERED_SCORE = 0.25 # Score for inconclusively filtered or open ports
 MAX_PORT = 65535 # The maximum port
 N_SCAN_TYPES = 6 # The number of scan types
 
@@ -55,25 +55,18 @@ class Controller:
         self.last_scan_type = action
         result = Scanner.scan_host(self.last_scan_type, target_ip,
             port, self.last_timeout)
-        # Add the open ports
-        for port in result.open_ports:
+        # Calculate the reward based on the result
+        calculated_reward = 0
+        if result == ScanResult.OPEN:
+            calculated_reward = OPEN_PORT_SCORE
             self.all_open_ports.add(port)
-        # Add the filtered ports. Don't add any that are open.
-        for port in result.filtered_ports:
-            if port not in self.all_open_ports:
-                self.all_filtered_ports.add(port)
-        # Add the ports inconclusively open or filtered.
-        # Don't add the ones known to be open or filtered.
-        for port in result.open_or_filtered_ports:
-            if (port not in self.all_open_ports
-                and port not in self.all_filtered_ports):
-                self.all_open_or_filtered_ports.add(port)
-        # Calculate scores to improve the machine learning
-        open_reward = OPEN_PORT_SCORE * len(result.open_ports)
-        # filtered_reward = FILTERED_PORT_SCORE * len(result.filtered_ports)
-        # open_or_filtered_length = len(result.open_or_filtered_ports)
-        # open_or_filtered_reward = OPEN_OR_FILTERED_SCORE * open_or_filtered_length
-        calculated_reward =  open_reward #+ filtered_reward + open_or_filtered_reward
+        elif result == ScanResult.FILTERED:
+            calculated_reward = FILTERED_PORT_SCORE
+            self.all_filtered_ports.add(port)
+        elif result == ScanResult.OPEN_OR_FILTERED:
+            calculated_reward = OPEN_OR_FILTERED_SCORE
+            self.all_open_or_filtered_ports.add(port)
+        # We are rewarded for finding open, filtered, or open/filtered ports
         if calculated_reward == 0:
             self.last_reward = -1
         else:
