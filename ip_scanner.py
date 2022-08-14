@@ -1,35 +1,17 @@
 """Scanner: A Module that contains classes for port scans and other network scans."""
+from enum import Enum
 from scapy.all import conf, sr1, sr
 from scapy.volatile import RandShort
 from scapy.sendrecv import srp
 from scapy.layers.inet import IP, TCP, ICMP, UDP
 from scapy.layers.l2 import Ether, ARP
 
-#TODO: Refactor this class out, since all the lists are just filled with 0 or 1 elements
-class ScanResult:
-    """Contains lists of ports that are either open, filtered,
-    or open or filtered but inconclusive
-    """
-
-    def __init__(self, open_ports, filtered_ports, open_or_filtered_ports):
-        self.open_ports = open_ports
-        self.filtered_ports = filtered_ports
-        self.open_or_filtered_ports = open_or_filtered_ports
-
-    def get_open_ports(self):
-        """Get a list of ports that are definitely open."""
-        return self.open_ports
-
-    def get_filtered_ports(self):
-        """Get a list of ports that are definitely filtered."""
-        return self.filtered_ports
-
-    def get_open_or_filtered_ports(self):
-        """Get a list of ports that are either open or filtered.
-            NOTE: These ports are distinct from the ones in the other list of ports.
-        """
-        return self.open_or_filtered_ports
-
+class ScanResult(Enum):
+    """An Enum representing the state of a port: open, filtered, open/filtered, or closed"""
+    OPEN = 1
+    FILTERED = 2
+    OPEN_OR_FILTERED = 3
+    CLOSED = 4
 
 class Scanner:
     """ A class specifically for scanning to get information about other hosts on the network.
@@ -57,91 +39,81 @@ class Scanner:
     @staticmethod
     def syn_scan(dst_ip, dst_port, timeout=3):
         """Conduct a SYN scan against a destination IP and port."""
-        # Initialize lists of ports
-        open_ports = []
-        filtered_ports = []
         # Scan from a random port
         src_port = RandShort()
 
         stealth_scan_resp = sr1(IP(dst=dst_ip)/
         TCP(sport=src_port,dport=dst_port,flags="S"),timeout=timeout)
         if "NoneType" in str(type(stealth_scan_resp)):
-            filtered_ports.append(dst_port)
+            return ScanResult.FILTERED
         elif stealth_scan_resp.haslayer(TCP):
             if stealth_scan_resp.getlayer(TCP).flags == 0x12:
                 sr(IP(dst=dst_ip)/TCP(sport=src_port,dport=dst_port,flags="R"),timeout=timeout)
-                open_ports.append(dst_port)
+                return ScanResult.OPEN
             elif stealth_scan_resp.haslayer(ICMP):
                 if int(stealth_scan_resp.getlayer(ICMP).type==3 and
                 int(stealth_scan_resp.getlayer(ICMP).code) in [1,2,3,9,10,13]):
-                    filtered_ports.append(dst_port)
+                    return ScanResult.FILTERED
 
-        return ScanResult(open_ports, filtered_ports, [])
+        return ScanResult.CLOSED
 
     @staticmethod
     def xmas_scan(dst_ip, dst_port, timeout=3):
         """Conduct an XMAS scan against a destination IP and port."""
-        filtered_ports = []
-        open_or_filtered_ports = []
         # Scan from a random port
         src_port = RandShort()
 
         xmas_scan_resp = sr1(IP(dst=dst_ip)/
         TCP(sport=src_port, dport=dst_port,flags="FPU"),timeout=timeout)
         if "NoneType" in str(type(xmas_scan_resp)):
-            open_or_filtered_ports.append(dst_port)
+            return ScanResult.OPEN_OR_FILTERED
         elif xmas_scan_resp.haslayer(TCP):
             if xmas_scan_resp.haslayer(ICMP):
                 if int(xmas_scan_resp.getlayer(ICMP).type==3
                 and int(xmas_scan_resp.getlayer(ICMP).code) in [1,2,3,9,10,13]):
-                    filtered_ports.append(dst_port)
+                    return ScanResult.FILTERED
 
-        return ScanResult([], filtered_ports, open_or_filtered_ports)
+        return ScanResult.CLOSED
 
     @staticmethod
     def fin_scan(dst_ip, dst_port, timeout=3):
         """Conduct a FIN scan against a destination IP and port."""
-        filtered_ports = []
-        open_or_filtered_ports = []
         # Scan from a random port
         src_port = RandShort()
 
         fin_scan_resp = sr1(IP(dst=dst_ip)/
         TCP(sport=src_port, dport=dst_port,flags="F"), timeout=timeout)
         if "NoneType" in str(type(fin_scan_resp)):
-            open_or_filtered_ports.append(dst_port)
+            return ScanResult.OPEN_OR_FILTERED
         elif fin_scan_resp.haslayer(TCP):
             if fin_scan_resp.haslayer(ICMP):
                 if int(fin_scan_resp.getlayer(ICMP).type==3
                     and int(fin_scan_resp.getlayer(ICMP).code) in [1,2,3,9,10,13]):
-                    filtered_ports.append(dst_port)
+                    return ScanResult.FILTERED
 
-        return ScanResult([], filtered_ports, open_or_filtered_ports)
+        return ScanResult.CLOSED
 
     @staticmethod
     def null_scan(dst_ip, dst_port, timeout=3):
         """Conduct a NULL scan against a destination IP and port."""
-        open_or_filtered_ports = []
-        filtered_ports = []
         # Scan from a random port
         src_port = RandShort()
 
         null_scan_resp = sr1(IP(dst=dst_ip)/
         TCP(sport=src_port, dport=dst_port,flags=""),timeout=timeout)
         if "NoneType" in str(type(null_scan_resp)):
-            open_or_filtered_ports.append(dst_port)
+            return ScanResult.OPEN_OR_FILTERED
         elif null_scan_resp.haslayer(TCP):
             if null_scan_resp.haslayer(ICMP):
                 if int(null_scan_resp.getlayer(ICMP).type==3
                     and int(null_scan_resp.getlayer(ICMP).code) in [1,2,3,9,10,13]):
-                    filtered_ports.append(dst_port)
+                    return ScanResult.FILTERED
 
-        return ScanResult([], filtered_ports, open_or_filtered_ports)
+        return ScanResult.CLOSED
 
     @staticmethod
     def window_scan(dst_ip, dst_port, timeout=3):
         """Conduct a Window scan against a destination IP and port."""
-        open_ports = []
         # Scan from a random port
         src_port = RandShort()
 
@@ -150,16 +122,13 @@ class Scanner:
         if "NoneType" not in str(type(window_scan_resp)):
             if window_scan_resp.haslayer(TCP):
                 if window_scan_resp.getlayer(TCP).window > 0:
-                    open_ports.append(dst_port)
+                    return ScanResult.OPEN
 
-        return ScanResult(open_ports, [], [])
+        return ScanResult.CLOSED
 
     @staticmethod
     def udp_scan(dst_ip, dst_port, timeout=3):
         """Conduct a UDP scan against a destination IP and port."""
-        open_ports = []
-        filtered_ports = []
-        open_or_filtered_ports = []
         # Scan from a random port
         src_port = RandShort()
 
@@ -171,15 +140,15 @@ class Scanner:
                 retrans.append(sr1(IP(dst=dst_ip)/UDP(dport=dst_port),timeout=timeout))
             for item in retrans:
                 if "NoneType" not in str(type(item)):
-                    open_or_filtered_ports.append(dst_port)
+                    return ScanResult.OPEN_OR_FILTERED
         elif udp_scan_resp.haslayer(UDP):
-            open_ports.append(dst_port)
+            return ScanResult.OPEN
         elif udp_scan_resp.haslayer(ICMP):
             if int(udp_scan_resp.getlayer(ICMP).type==3
                 and int(udp_scan_resp.getlayer(ICMP).code) in [1,2,9,10,13]):
-                filtered_ports.append(dst_port)
+                return ScanResult.FILTERED
 
-        return ScanResult(open_ports, filtered_ports, open_or_filtered_ports)
+        return ScanResult.CLOSED
 
     @staticmethod
     def scan_host(scan_type, dst_ip, dst_port, timeout=5):
