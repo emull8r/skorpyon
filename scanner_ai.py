@@ -97,16 +97,15 @@ class Brain:
         # print("Unsqueezed: ",unsqueezed)
         outputs = self.model(batch_state)
         gathered = outputs.gather(1, unsqueezed_actions)
-        squeezed_actions = gathered.squeeze(1)
-        # print("Squeezed: ",squeezed)
-        #TODO: Fix this: Using target size [50] different from input size [1, 50]
+        squeezed_actions = torch.squeeze(gathered)
+        # print("Squeezed: ",squeezed_actions)
         td_loss = F.smooth_l1_loss(squeezed_actions, target)
         self.optimizer.zero_grad()
         # Backpropagate the TD loss
         td_loss.backward(retain_graph=True)
         self.optimizer.step()
 
-    def update(self, reward, signal, specific_action=-1, n_samples=50):
+    def update(self, reward, signal, specific_action=-1, n_samples=10):
         """Update the model. Enter the new state, start learning, and get the new last reward.
             Keyword arguments:
             reward -- The new reward from entering the new state
