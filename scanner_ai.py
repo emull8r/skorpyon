@@ -50,7 +50,7 @@ class ReplayMemory(object):
 class Brain:
     """The 'Brain' of a Deep Q-Learning network, used to drive scanning decisions."""
     def __init__(self, input_size, output_size, hidden_layer_size=30,
-        capacity=1000, gamma=0.9, reward_window_size=1000, learning_rate=0.005):
+        capacity=1000, gamma=0.9, reward_window_size=1000, learning_rate=0.0001):
         self.gamma = gamma
         self.reward_window = []
         self.reward_window_size = reward_window_size
