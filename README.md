@@ -12,7 +12,7 @@ Example: ./skorpyon.py 192.168.0.3 1 1000
 
 Scan IP address from start port to end port, using all scan types for each port: ./skorpyon.py [IP address] [start port] [end port] -allscans
 
-Example: ./skorpyon.py 192.168.0.3 1 1000 -train
+Example: ./skorpyon.py 192.168.0.3 1 1000 -allscans
 
 # Disclaimer
 The developer is not reponsible for what end users do with this program.
